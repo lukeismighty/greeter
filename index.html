@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link rel="shortcut icon" href="graphics/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="main.css">
+    <script src="js/three.min.js"></script>
+	<script src="js/PRWMLoader.js"></script>
+    <script src="js/tracking-min.js"></script>
+    <script src="js/face-min.js"></script>
+    <script src="js/deeplearn.js"></script>
+    <!--[if lt IE 9]>
+    <script>
+        document.createElement('video');
+    </script>
+    <![endif]-->
+</head>
+<body>
+    <video playsinline autoplay muted loop poster="video/0.jpg" id="bgvid">
+        <source src="video/0.webm" type="video/webm">
+        <source src="video/0.mp4" type="video/mp4">
+    </video>
+    <!-- Some of this is taken three.js" examples -->
+    <!--     as well as from tracker.js" examples -->
+    <video id="video" class="img" preload autoplay loop muted></video>
+    <canvas id="canvas"></canvas>
+    <div class="notes"><strong id="endianness"></strong></div>
+    <script>
+        <!-- BEGIN facial recognition portion -->
+        var faceX, faceY; // store location of face in video for use with avatar's direction
+        window.onload = function() {
+            var video = document.getElementById("video");
+            var canvas = document.getElementById("canvas");
+            var context = canvas.getContext("2d");
+            var tracker1 = new tracking.ObjectTracker("face");
+            tracker1.setInitialScale(4);
+            tracker1.setStepSize(2);
+            tracker1.setEdgesDensity(0.1);
+            tracking.track("#video", tracker1, { camera: true });
+            tracker1.on("track", function(event) {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                event.data.forEach(function(rect) {
+                    // width
+                    if ( ( rect.x / 2 ) >= 80 ) {
+                        faceX = - ( ( rect.x / 2 ) );
+                    } else {
+                        faceX = ( ( rect.x / 2 ) );
+                    };
+                    // height
+                    if ( ( rect.y / 2 ) >= 60 ) {
+                        faceY = ( ( rect.y / 2 ) );
+                    } else {
+                        faceY = - ( ( rect.y / 2 ) );
+                    };
+                });
+            });
+        };
+        <!-- END facial recognition portion -->
+        <!-- BEGIN avatar portion -->
+        var container;
+        var camera, scene, renderer;
+        var mouseX = 0, mouseY = 0;
+        var windowHalfX = window.innerWidth / 2;
+        var windowHalfY = window.innerHeight / 2;
+
+        init();
+        animate();
+
+        function init() {
+            //document.getElementById( "endianness" ).innerHTML = THREE.PRWMLoader.isBigEndianPlatform() ? "big-endian" : "little-endian";
+            container = document.createElement( "div" );
+            document.body.appendChild( container );
+            
+            // camera
+            var fov = 45; // Camera frustum vertical field of view, from bottom to top of view, in degrees. Default is 50.
+            var aspect = window.innerWidth / window.innerHeight; // Camera frustum aspect ratio, usually the canvas width / canvas height. Default is 1 (square canvas).
+            var near = 1;
+            var far = 2000; // Camera frustum far plane. Default is 2000. Valid only between near and infinity.
+            camera = new THREE.PerspectiveCamera( fov, aspect, near, far );
+            camera.position.z = 250;
+            
+            // scene
+            scene = new THREE.Scene();
+            var ambient = new THREE.AmbientLight( 0x101030 );
+            scene.add( ambient );
+            var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+            directionalLight.position.set( 0, 0, 1 );
+            scene.add( directionalLight );
+            
+            // model
+            //var loader = new THREE.PRWMLoader();
+            //var material = new THREE.MeshLambertMaterial( {} );
+            //var busy = false;
+            //var mesh = null;
+            //var onProgress = function ( xhr ) {
+            //    if ( xhr.lengthComputable ) {
+            //        var percentComplete = xhr.loaded / xhr.total * 100;
+            //        console.log( Math.round( percentComplete, 2 ) + "% downloaded" );
+            //        if ( xhr.loaded === xhr.total ) {
+            //            console.log( "File size: " + ( xhr.total / 1024 ).toFixed( 2 ) + "kB" );
+            //            console.timeEnd( "Download" );
+            //        }
+            //    }
+            //};
+            //var onError = function ( xhr ) {
+            //    busy = false;
+            //};
+            //function loadGeometry( url ) {
+            //    if ( busy ) return;
+            //    busy = true;
+            //    if ( mesh !== null ) {
+            //        scene.remove( mesh );
+            //        mesh.geometry.dispose();
+            //    }
+            //    console.log( "-- Loading", url );
+            //    console.time( "Download" );
+            //    loader.load( url, function ( geometry ) {
+            //        mesh = new THREE.Mesh( geometry, material );
+            //        mesh.scale.set( 50, 50, 50 );
+            //        scene.add( mesh );
+            //        console.log( geometry.index ? "indexed geometry" : "non-indexed geometry" );
+            //        console.log( "# of vertices: " + geometry.attributes.position.count );
+            //        console.log( "# of polygons: " + ( geometry.index ? geometry.index.count / 3 : geometry.attributes.position.count / 3 ) );
+            //        busy = false;
+            //    }, onProgress, onError );
+            //};
+            
+            // BEGIN Clara.io JSON loader code
+            var objectLoader = new THREE.ObjectLoader();
+            objectLoader.load("./models/mario-sculpture.json", function ( obj ) {
+                obj.rotation.y = 180 * Math.PI / 180;
+                scene.add( obj );
+            } );
+            // END Clara.io JSON loader code
+            
+            renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
+            //renderer.setClearColor(0x0C479D, 1);
+            renderer.setPixelRatio( 1 );
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            container.appendChild( renderer.domElement );
+            document.addEventListener( "mousemove", onDocumentMouseMove, false );
+            // * is automatically replaced by "le" or "be" depending on the client platform"s endianness
+            //loadGeometry( "./models/smooth-suzanne.*.prwm" );
+            window.addEventListener( "resize", onWindowResize, false );
+        }
+        function onWindowResize() {
+            windowHalfX = window.innerWidth / 2;
+            windowHalfY = window.innerHeight / 2;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+        }
+        function onDocumentMouseMove( event ) {
+            mouseX = ( event.clientX - windowHalfX ) / 2;
+            mouseY = ( event.clientY - windowHalfY ) / 2;
+        }
+        function animate() {
+            requestAnimationFrame( animate );
+            render();
+        }
+        function render() {
+            // Needed to set the position for the avatar to look otherwise it won"t render.
+            if ( faceX == null ) {
+                faceX = 0;
+            }
+            if ( faceY == null ) {
+                faceY = 0;
+            }
+            
+            // These are for mouse tracking instead of facial tracking.
+            //camera.position.x += ( - mouseX - camera.position.x ) * .25;
+            //camera.position.y += ( mouseY - camera.position.y ) * .25;
+            
+            // These are for facial tracking instead of mouse tracking.
+            camera.position.x += ( faceX - camera.position.x ) * .25;
+            camera.position.y += ( faceY - camera.position.y ) * .25;
+            // Since you can"t divine what the values are, this will print in the console.
+            //console.log( "cameraX: " + camera.position.x + ", cameraY: " + camera.position.y );
+            //console.log("faceX: " + faceX + ", faceY: " + faceY);
+            camera.lookAt( scene.position );
+            renderer.render( scene, camera );
+        }
+        <!-- END avatar portion -->
+    </script>
+</body>
+</html>
