@@ -1,2 +1,8 @@
 # greeter
 Animated and facial tracking greeter on a computer
+
+The idea behind this project, which is unfinished, is to have an avatar on a computer screen that simulated being able to see you. Right now, as of this initial commit, it will point itself at where it detects your face. In the future, I plan to implement facial recognition and deep learning so it will know who it is looking at provided the names are added in, as well as the ability to speak to the person it "sees".
+
+The greeter uses tracking.js to find your face and the javascript with it will give up the coordinates of where that face is on the video found on the page. The avatar is loaded using three.js and the camera moves around using the previously provided coordinates, giving the appearance that the avatar is looking at you. It currently is a little buggy because of the math, but the idea is working. I will hopefully be adding in something that will use the video feed to recognize the person in the picture and be able to speak to them. I have been trying to run all of it with javascript so far, using things already built, but the object/facial recognition looks to be a little difficult to work with at the moment for what I want it to work with.
+
+I do not own and have not changed the js or model files in the repo here. They belong to tracking.js and three.js, not myself in any way, shape, or form. I give full credit for those files to their respective owners. You can find their sites at, https://threejs.org/ and https://trackingjs.com/. However the mario's avatar came from clara.io and have forgotten to record which person uploaded it to their site. You can find clara.io at https://clara.io/. They have some nifty stuff on there.
